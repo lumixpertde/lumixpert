@@ -190,8 +190,6 @@ const GallerySection = () => {
       filter: 'blur(0px)',
       transition: {
         duration: 1,
-        type: 'spring',
-        bounce: 0.3,
         ease: 'easeOut',
       }
     }

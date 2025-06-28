@@ -74,8 +74,6 @@ const VideoSection = () => {
           }}
           transition={{
             duration: 1.2,
-            type: 'spring',
-            bounce: 0.3,
             ease: 'easeOut',
           }}
           whileHover={{

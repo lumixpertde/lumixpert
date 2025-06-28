@@ -11,18 +11,18 @@
     
     <!-- Critical resource hints -->
     <link rel="preload" href="/logo.png" as="image" type="image/png" fetchpriority="high">
-    <link rel="preload" href="/metall.webp" as="image" type="image/webp">
-    <link rel="preload" href="/holz.jpg" as="image" type="image/jpeg">
-    
-    <!-- Prefetch non-critical resources -->
-    <link rel="prefetch" href="/leder.webp">
-    <link rel="prefetch" href="/glas.webp">
-    <link rel="prefetch" href="/admin">
     
     <!-- DNS prefetch for external resources -->
     <link rel="dns-prefetch" href="//www.google-analytics.com">
     <link rel="dns-prefetch" href="//www.googletagmanager.com">
     <link rel="dns-prefetch" href="//connect.facebook.net">
+    
+    <!-- Prefetch non-critical resources (removed immediate preloads to avoid unused warnings) -->
+    <link rel="prefetch" href="/metall.webp">
+    <link rel="prefetch" href="/holz.jpg">
+    <link rel="prefetch" href="/leder.webp">
+    <link rel="prefetch" href="/glas.webp">
+    <link rel="prefetch" href="/admin">
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/logo.png" />

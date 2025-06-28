@@ -94,8 +94,6 @@ const AboutSection = () => {
       filter: 'blur(0px)',
       transition: {
         duration: 0.8,
-        type: 'spring',
-        bounce: 0.4,
         ease: 'easeOut',
       }
     }
@@ -115,8 +113,6 @@ const AboutSection = () => {
       filter: 'blur(0px)',
       transition: {
         duration: 1,
-        type: 'spring',
-        bounce: 0.3,
         ease: 'easeOut',
       }
     }

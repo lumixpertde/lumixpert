@@ -130,11 +130,32 @@ const ContactSection = () => {
     }
   };
 
+  const itemVariants = {
+    hidden: { 
+      opacity: 0,
+      y: 60,
+      x: -30,
+      scale: 0.8,
+      filter: 'blur(10px)',
+    },
+    visible: { 
+      opacity: 1,
+      y: 0,
+      x: 0,
+      scale: 1,
+      filter: 'blur(0px)',
+      transition: {
+        duration: 0.8,
+        ease: 'easeOut',
+      }
+    }
+  };
+
   const titleVariants = {
     hidden: { 
       opacity: 0,
-      y: -30,
-      scale: 0.9,
+      y: -50,
+      scale: 0.8,
       filter: 'blur(8px)',
     },
     visible: { 
@@ -143,9 +164,8 @@ const ContactSection = () => {
       scale: 1,
       filter: 'blur(0px)',
       transition: {
-        duration: 0.8,
-        type: 'spring',
-        bounce: 0.2,
+        duration: 1,
+        ease: 'easeOut',
       }
     }
   };

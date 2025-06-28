@@ -20,7 +20,8 @@ import {
   optimizeCriticalPath,
   lazyLoadResources,
   registerServiceWorker,
-  analyzeBundleSize 
+  analyzeBundleSize,
+  fixAnimationIssues
 } from './utils/performance';
 import { initializeAnalytics, trackPageView } from './utils/analytics';
 import { initializeMetaPixel, trackMetaPageView } from './utils/metaPixel';
@@ -68,6 +69,9 @@ export function App() {
     // Critical path optimization (runs first)
     optimizeCriticalPath();
     
+    // Fix CSS animation issues
+    fixAnimationIssues();
+    
     // Initialize performance monitoring
     const performanceMonitor = initPerformanceMonitoring();
     
@@ -108,10 +112,16 @@ export function App() {
     // Initialize Meta Pixel
     const initMetaPixel = async () => {
       try {
-        // Check if pixel ID is stored
+        // Check if pixel ID is stored and valid
         const storedPixelId = localStorage.getItem('meta_pixel_id');
         const storedTestCode = localStorage.getItem('meta_test_event_code');
-        await initializeMetaPixel(storedPixelId || undefined, storedTestCode || undefined);
+        
+        // Only initialize if we have a valid pixel ID
+        if (storedPixelId && storedPixelId !== 'null' && storedPixelId !== '' && /^\d{15,16}$/.test(storedPixelId)) {
+          await initializeMetaPixel(storedPixelId, storedTestCode || undefined);
+        } else {
+          console.log('Meta Pixel: No valid pixel ID found, skipping initialization');
+        }
       } catch (error) {
         console.warn('Meta Pixel initialization failed:', error);
       }

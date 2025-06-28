@@ -28,20 +28,47 @@ export class MetaPixel {
   private isInitialized: boolean = false;
   private consentGiven: boolean = false;
   private queuedEvents: MetaPixelEvent[] = [];
+  private static instance: MetaPixel | null = null;
 
   constructor(config: Partial<MetaPixelConfig> = {}) {
+    // Prevent multiple instances
+    if (MetaPixel.instance) {
+      // Return the existing instance but don't actually return in constructor
+      console.warn('Meta Pixel: Instance already exists, using existing instance');
+    }
+
     this.config = {
-      pixelId: '000000000000000', // Replace with actual Meta Pixel ID
-      enableDevelopment: false,
+      pixelId: '', // Will be set during initialization
+      enableDevelopment: process.env.NODE_ENV === 'development',
       enableAdvancedMatching: true,
       enableAutomaticMatching: true,
       enableFirstPartyData: true,
       ...config
     };
+
+    if (!MetaPixel.instance) {
+      MetaPixel.instance = this;
+    }
   }
 
   // Initialize Meta Pixel
-  async initialize(): Promise<void> {
+  async initialize(pixelId?: string): Promise<void> {
+    // Validate pixel ID
+    if (!pixelId && !this.config.pixelId) {
+      console.warn('Meta Pixel: No valid pixel ID provided, skipping initialization');
+      return;
+    }
+
+    if (pixelId) {
+      this.config.pixelId = pixelId;
+    }
+
+    // Validate pixel ID format (should be numeric and reasonable length)
+    if (!/^\d{15,16}$/.test(this.config.pixelId)) {
+      console.warn('Meta Pixel: Invalid pixel ID format, skipping initialization');
+      return;
+    }
+
     if (this.isInitialized) {
       console.warn('Meta Pixel already initialized');
       return;
@@ -58,7 +85,7 @@ export class MetaPixel {
       this.setupPrivacySettings();
       
       this.isInitialized = true;
-      console.log('Meta Pixel initialized successfully');
+      console.log('Meta Pixel initialized successfully with ID:', this.config.pixelId);
       
       // Process queued events
       this.processQueuedEvents();
@@ -77,12 +104,16 @@ export class MetaPixel {
         return;
       }
 
-      // Initialize fbq function
-      window.fbq = window.fbq || function() {
-        (window.fbq as any).callMethod ? 
-        (window.fbq as any).callMethod.apply(window.fbq, arguments) : 
-        (window.fbq as any).queue.push(arguments);
-      };
+      // Initialize fbq function only if it doesn't exist
+      if (!window.fbq) {
+        window.fbq = function() {
+          (window.fbq as any).callMethod ? 
+          (window.fbq as any).callMethod.apply(window.fbq, arguments) : 
+          (window.fbq as any).queue.push(arguments);
+        };
+        (window.fbq as any).queue = [];
+        (window.fbq as any).loaded = false;
+      }
       
       if (!(window.fbq as any).loaded) {
         const script = document.createElement('script');
@@ -96,7 +127,6 @@ export class MetaPixel {
         script.onerror = () => reject(new Error('Failed to load Meta Pixel script'));
         
         document.head.appendChild(script);
-        (window.fbq as any).queue = [];
       } else {
         resolve();
       }
@@ -105,6 +135,11 @@ export class MetaPixel {
 
   // Configure Meta Pixel with privacy settings
   private configurePixel(): void {
+    if (!window.fbq || !this.config.pixelId) {
+      console.warn('Meta Pixel: fbq not available or no pixel ID');
+      return;
+    }
+
     const initOptions: Record<string, any> = {};
 
     // Advanced matching for better attribution
@@ -124,17 +159,21 @@ export class MetaPixel {
       initOptions.first_party_data = true;
     }
 
-    // Test event code for development
-    if (this.config.testEventCode && this.config.enableDevelopment) {
-      window.fbq('init', this.config.pixelId, initOptions, {
-        test_event_code: this.config.testEventCode
-      });
-    } else {
-      window.fbq('init', this.config.pixelId, initOptions);
-    }
+    try {
+      // Test event code for development
+      if (this.config.testEventCode && this.config.enableDevelopment) {
+        window.fbq('init', this.config.pixelId, initOptions, {
+          test_event_code: this.config.testEventCode
+        });
+      } else {
+        window.fbq('init', this.config.pixelId, initOptions);
+      }
 
-    // Set agent for tracking
-    window.fbq('set', 'agent', 'lumixpert-website', this.config.pixelId);
+      // Set agent for tracking (only if pixel is properly initialized)
+      window.fbq('set', 'agent', 'lumixpert-website', this.config.pixelId);
+    } catch (error) {
+      console.error('Meta Pixel configuration error:', error);
+    }
   }
 
   // Set up privacy-respecting settings
@@ -361,13 +400,10 @@ export const metaPixel = new MetaPixel();
 
 // Utility functions for easy use
 export const initializeMetaPixel = (pixelId?: string, testEventCode?: string) => {
-  if (pixelId) {
-    metaPixel.setPixelId(pixelId);
-  }
   if (testEventCode) {
     metaPixel.setTestEventCode(testEventCode);
   }
-  return metaPixel.initialize();
+  return metaPixel.initialize(pixelId);
 };
 
 export const trackMetaPageView = (customData?: Record<string, any>) => {

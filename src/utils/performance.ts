@@ -429,4 +429,47 @@ export const analyzeBundleSize = () => {
     console.log(`Estimated bundle size: ~${totalSize}KB`);
     console.groupEnd();
   }
+};
+
+// Fix CSS animation issues
+export const fixAnimationIssues = () => {
+  // Monitor for invalid CSS filter values and fix them
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+        const element = mutation.target as HTMLElement;
+        if (element.style && element.style.filter) {
+          // Fix negative blur values
+          const filter = element.style.filter;
+          if (filter.includes('blur(-')) {
+            element.style.filter = filter.replace(/blur\(-[\d.]+px\)/g, 'blur(0px)');
+          }
+        }
+      }
+    });
+  });
+
+  // Start observing
+  observer.observe(document.body, {
+    attributes: true,
+    attributeFilter: ['style'],
+    subtree: true
+  });
+
+  // Also fix any existing elements with negative blur values
+  const fixExistingElements = () => {
+    const elements = document.querySelectorAll('[style*="blur(-"]');
+    elements.forEach((element) => {
+      const htmlElement = element as HTMLElement;
+      if (htmlElement.style.filter) {
+        htmlElement.style.filter = htmlElement.style.filter.replace(/blur\(-[\d.]+px\)/g, 'blur(0px)');
+      }
+    });
+  };
+
+  // Fix existing elements and set up periodic checks
+  fixExistingElements();
+  setInterval(fixExistingElements, 1000);
+
+  console.log('Animation issue fixes initialized');
 }; 
