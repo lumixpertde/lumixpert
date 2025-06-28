@@ -175,6 +175,12 @@
           setTimeout(() => spinner.remove(), 300);
         }
       });
+
+      // Set Google Analytics Measurement ID
+      if (!localStorage.getItem('ga_measurement_id')) {
+        localStorage.setItem('ga_measurement_id', 'G-5HL6NC6N30');
+        console.log('Google Analytics ID configured: G-5HL6NC6N30');
+      }
     </script>
   </body>
 </html>

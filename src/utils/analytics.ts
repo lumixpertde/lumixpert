@@ -40,7 +40,7 @@ export class GoogleAnalytics {
 
   constructor(config: Partial<GAConfig> = {}) {
     this.config = {
-      measurementId: 'G-XXXXXXXXXX', // Replace with actual GA4 Measurement ID
+      measurementId: 'G-5HL6NC6N30', // Default measurement ID
       enableDevelopment: false,
       anonymizeIp: true,
       enableAdvertisingFeatures: false,
