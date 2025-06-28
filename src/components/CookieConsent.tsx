@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Cookie, Shield, Settings, X, Check } from 'lucide-react';
 import { giveConsent, deleteAnalyticsData, analytics } from '../utils/analytics';
@@ -16,87 +16,143 @@ const CookieConsent: React.FC<CookieConsentProps> = ({ onConsentChange }) => {
     marketing: false,
     functional: true
   });
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     // Check if user has already given consent
-    const existingConsent = localStorage.getItem('ga_consent');
-    if (!existingConsent) {
-      setShowBanner(true);
-    } else {
-      try {
+    try {
+      const existingConsent = localStorage.getItem('ga_consent');
+      if (!existingConsent) {
+        setShowBanner(true);
+      } else {
         const parsed = JSON.parse(existingConsent);
-        setConsent({
+        const newConsent = {
           analytics: parsed.analytics || false,
           marketing: parsed.marketing || false,
           functional: parsed.functionality !== false
-        });
-      } catch (error) {
-        setShowBanner(true);
+        };
+        setConsent(newConsent);
+        setShowBanner(false);
       }
+    } catch (error) {
+      console.warn('Error reading consent:', error);
+      setShowBanner(true);
     }
   }, []);
 
-  const handleAcceptAll = () => {
+  const processConsent = useCallback(async (newConsent: { analytics: boolean; marketing: boolean; functional: boolean }) => {
+    if (isProcessing) return;
+    
+    setIsProcessing(true);
+    
+    try {
+      // Update local state first
+      setConsent(newConsent);
+      
+      // Store in localStorage
+      localStorage.setItem('ga_consent', JSON.stringify({
+        analytics: newConsent.analytics,
+        marketing: newConsent.marketing,
+        functionality: newConsent.functional,
+        timestamp: Date.now()
+      }));
+
+      // Give consent to analytics (with retry)
+      try {
+        await giveConsent(newConsent);
+      } catch (error) {
+        console.warn('Analytics consent error:', error);
+      }
+
+      // Give consent to Meta Pixel (with retry)
+      try {
+        await giveMetaConsent(newConsent);
+      } catch (error) {
+        console.warn('Meta Pixel consent error:', error);
+      }
+
+      // Call callback
+      onConsentChange?.(newConsent);
+      
+      console.log('Cookie consent processed successfully:', newConsent);
+    } catch (error) {
+      console.error('Error processing consent:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [isProcessing, onConsentChange]);
+
+  const handleAcceptAll = useCallback(async () => {
     const newConsent = {
       analytics: true,
       marketing: true,
       functional: true
     };
     
-    setConsent(newConsent);
-    giveConsent(newConsent);
-    giveMetaConsent(newConsent);
+    await processConsent(newConsent);
     setShowBanner(false);
-    onConsentChange?.(newConsent);
-  };
+  }, [processConsent]);
 
-  const handleRejectAll = () => {
+  const handleRejectAll = useCallback(async () => {
     const newConsent = {
       analytics: false,
       marketing: false,
       functional: true
     };
     
-    setConsent(newConsent);
-    giveConsent(newConsent);
-    giveMetaConsent(newConsent);
+    await processConsent(newConsent);
     setShowBanner(false);
-    onConsentChange?.(newConsent);
-  };
+  }, [processConsent]);
 
-  const handleSaveSettings = () => {
-    giveConsent(consent);
-    giveMetaConsent(consent);
+  const handleSaveSettings = useCallback(async () => {
+    await processConsent(consent);
     setShowBanner(false);
     setShowSettings(false);
-    onConsentChange?.(consent);
-  };
+  }, [consent, processConsent]);
 
-  const handleToggleConsent = (type: 'analytics' | 'marketing' | 'functional') => {
-    if (type === 'functional') return; // Functional cookies are required
+  const handleToggleConsent = useCallback((type: 'analytics' | 'marketing' | 'functional') => {
+    if (type === 'functional' || isProcessing) return; // Functional cookies are required
     
     setConsent(prev => ({
       ...prev,
       [type]: !prev[type]
     }));
-  };
+  }, [isProcessing]);
 
-  const handleDeleteData = () => {
-    deleteAnalyticsData();
-    clearMetaPixelData();
-    setConsent({
-      analytics: false,
-      marketing: false,
-      functional: true
-    });
-    setShowBanner(false);
-    setShowSettings(false);
-    onConsentChange?.({
-      analytics: false,
-      marketing: false,
-      functional: true
-    });
-  };
+  const handleDeleteData = useCallback(async () => {
+    if (isProcessing) return;
+    
+    setIsProcessing(true);
+    
+    try {
+      // Clear analytics data
+      await deleteAnalyticsData();
+      
+      // Clear Meta Pixel data
+      await clearMetaPixelData();
+      
+      // Clear localStorage
+      localStorage.removeItem('ga_consent');
+      localStorage.removeItem('meta_pixel_consent');
+      
+      const newConsent = {
+        analytics: false,
+        marketing: false,
+        functional: true
+      };
+      
+      setConsent(newConsent);
+      setShowBanner(false);
+      setShowSettings(false);
+      onConsentChange?.(newConsent);
+      
+      console.log('All cookie data deleted successfully');
+    } catch (error) {
+      console.error('Error deleting data:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [isProcessing, onConsentChange]);
 
   if (!showBanner) {
     return null;
@@ -140,28 +196,31 @@ const CookieConsent: React.FC<CookieConsentProps> = ({ onConsentChange }) => {
                   <div className="flex flex-wrap gap-3">
                     <motion.button
                       onClick={handleAcceptAll}
-                      className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                      disabled={isProcessing}
+                      className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors font-medium"
+                      whileHover={!isProcessing ? { scale: 1.02 } : {}}
+                      whileTap={!isProcessing ? { scale: 0.98 } : {}}
                     >
                       <Check className="w-4 h-4" />
-                      Alle akzeptieren
+                      {isProcessing ? 'Wird gespeichert...' : 'Alle akzeptieren'}
                     </motion.button>
                     
                     <motion.button
                       onClick={handleRejectAll}
-                      className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                      disabled={isProcessing}
+                      className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors font-medium"
+                      whileHover={!isProcessing ? { scale: 1.02 } : {}}
+                      whileTap={!isProcessing ? { scale: 0.98 } : {}}
                     >
-                      Alle ablehnen
+                      {isProcessing ? 'Wird gespeichert...' : 'Alle ablehnen'}
                     </motion.button>
                     
                     <motion.button
                       onClick={() => setShowSettings(true)}
-                      className="flex items-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                      disabled={isProcessing}
+                      className="flex items-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:bg-gray-50 disabled:cursor-not-allowed transition-colors"
+                      whileHover={!isProcessing ? { scale: 1.02 } : {}}
+                      whileTap={!isProcessing ? { scale: 0.98 } : {}}
                     >
                       <Settings className="w-4 h-4" />
                       Einstellungen
@@ -196,16 +255,17 @@ const CookieConsent: React.FC<CookieConsentProps> = ({ onConsentChange }) => {
                       </div>
                       <button
                         onClick={() => handleToggleConsent('analytics')}
-                        className="flex items-center"
+                        disabled={isProcessing}
+                        className="flex items-center disabled:cursor-not-allowed"
                       >
                         <div className={`w-12 h-6 rounded-full flex items-center px-1 transition-colors ${
                           consent.analytics ? 'bg-blue-500 justify-end' : 'bg-gray-300 justify-start'
-                        }`}>
+                        } ${isProcessing ? 'opacity-50' : ''}`}>
                           <div className="w-4 h-4 bg-white rounded-full"></div>
                         </div>
                         <span className={`ml-2 text-sm font-medium ${
                           consent.analytics ? 'text-blue-600' : 'text-gray-500'
-                        }`}>
+                        } ${isProcessing ? 'opacity-50' : ''}`}>
                           {consent.analytics ? 'Aktiviert' : 'Deaktiviert'}
                         </span>
                       </button>
@@ -221,16 +281,17 @@ const CookieConsent: React.FC<CookieConsentProps> = ({ onConsentChange }) => {
                       </div>
                       <button
                         onClick={() => handleToggleConsent('marketing')}
-                        className="flex items-center"
+                        disabled={isProcessing}
+                        className="flex items-center disabled:cursor-not-allowed"
                       >
                         <div className={`w-12 h-6 rounded-full flex items-center px-1 transition-colors ${
                           consent.marketing ? 'bg-blue-500 justify-end' : 'bg-gray-300 justify-start'
-                        }`}>
+                        } ${isProcessing ? 'opacity-50' : ''}`}>
                           <div className="w-4 h-4 bg-white rounded-full"></div>
                         </div>
                         <span className={`ml-2 text-sm font-medium ${
                           consent.marketing ? 'text-blue-600' : 'text-gray-500'
-                        }`}>
+                        } ${isProcessing ? 'opacity-50' : ''}`}>
                           {consent.marketing ? 'Aktiviert' : 'Deaktiviert'}
                         </span>
                       </button>
@@ -240,31 +301,34 @@ const CookieConsent: React.FC<CookieConsentProps> = ({ onConsentChange }) => {
                     <div className="flex flex-wrap gap-3 pt-4">
                       <motion.button
                         onClick={handleSaveSettings}
-                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                        disabled={isProcessing}
+                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors font-medium"
+                        whileHover={!isProcessing ? { scale: 1.02 } : {}}
+                        whileTap={!isProcessing ? { scale: 0.98 } : {}}
                       >
                         <Check className="w-4 h-4" />
-                        Einstellungen speichern
+                        {isProcessing ? 'Wird gespeichert...' : 'Einstellungen speichern'}
                       </motion.button>
                       
                       <motion.button
                         onClick={() => setShowSettings(false)}
-                        className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                        disabled={isProcessing}
+                        className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors font-medium"
+                        whileHover={!isProcessing ? { scale: 1.02 } : {}}
+                        whileTap={!isProcessing ? { scale: 0.98 } : {}}
                       >
                         Zurück
                       </motion.button>
                       
                       <motion.button
                         onClick={handleDeleteData}
-                        className="flex items-center gap-2 px-6 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                        disabled={isProcessing}
+                        className="flex items-center gap-2 px-6 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:bg-red-50 disabled:cursor-not-allowed transition-colors font-medium"
+                        whileHover={!isProcessing ? { scale: 1.02 } : {}}
+                        whileTap={!isProcessing ? { scale: 0.98 } : {}}
                       >
                         <X className="w-4 h-4" />
-                        Alle Daten löschen
+                        {isProcessing ? 'Wird gelöscht...' : 'Alle Daten löschen'}
                       </motion.button>
                     </div>
                   </div>

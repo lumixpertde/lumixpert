@@ -38,7 +38,7 @@ export class MetaPixel {
     }
 
     this.config = {
-      pixelId: '', // Will be set during initialization
+      pixelId: '736496755403663', // Default Meta Pixel ID
       enableDevelopment: process.env.NODE_ENV === 'development',
       enableAdvancedMatching: true,
       enableAutomaticMatching: true,
