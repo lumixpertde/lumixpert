@@ -1,0 +1,292 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Cookie, Shield, Settings, X, Check } from 'lucide-react';
+import { giveConsent, deleteAnalyticsData, analytics } from '../utils/analytics';
+import { giveMetaConsent, clearMetaPixelData, metaPixel } from '../utils/metaPixel';
+
+interface CookieConsentProps {
+  onConsentChange?: (consent: { analytics: boolean; marketing: boolean; functional: boolean }) => void;
+}
+
+const CookieConsent: React.FC<CookieConsentProps> = ({ onConsentChange }) => {
+  const [showBanner, setShowBanner] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [consent, setConsent] = useState({
+    analytics: false,
+    marketing: false,
+    functional: true
+  });
+
+  useEffect(() => {
+    // Check if user has already given consent
+    const existingConsent = localStorage.getItem('ga_consent');
+    if (!existingConsent) {
+      setShowBanner(true);
+    } else {
+      try {
+        const parsed = JSON.parse(existingConsent);
+        setConsent({
+          analytics: parsed.analytics || false,
+          marketing: parsed.marketing || false,
+          functional: parsed.functionality !== false
+        });
+      } catch (error) {
+        setShowBanner(true);
+      }
+    }
+  }, []);
+
+  const handleAcceptAll = () => {
+    const newConsent = {
+      analytics: true,
+      marketing: true,
+      functional: true
+    };
+    
+    setConsent(newConsent);
+    giveConsent(newConsent);
+    giveMetaConsent(newConsent);
+    setShowBanner(false);
+    onConsentChange?.(newConsent);
+  };
+
+  const handleRejectAll = () => {
+    const newConsent = {
+      analytics: false,
+      marketing: false,
+      functional: true
+    };
+    
+    setConsent(newConsent);
+    giveConsent(newConsent);
+    giveMetaConsent(newConsent);
+    setShowBanner(false);
+    onConsentChange?.(newConsent);
+  };
+
+  const handleSaveSettings = () => {
+    giveConsent(consent);
+    giveMetaConsent(consent);
+    setShowBanner(false);
+    setShowSettings(false);
+    onConsentChange?.(consent);
+  };
+
+  const handleToggleConsent = (type: 'analytics' | 'marketing' | 'functional') => {
+    if (type === 'functional') return; // Functional cookies are required
+    
+    setConsent(prev => ({
+      ...prev,
+      [type]: !prev[type]
+    }));
+  };
+
+  const handleDeleteData = () => {
+    deleteAnalyticsData();
+    clearMetaPixelData();
+    setConsent({
+      analytics: false,
+      marketing: false,
+      functional: true
+    });
+    setShowBanner(false);
+    setShowSettings(false);
+    onConsentChange?.({
+      analytics: false,
+      marketing: false,
+      functional: true
+    });
+  };
+
+  if (!showBanner) {
+    return null;
+  }
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 z-50 flex items-end justify-center p-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        {/* Backdrop */}
+        <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm" />
+        
+        {/* Banner */}
+        <motion.div
+          className="relative bg-white rounded-lg shadow-2xl max-w-4xl w-full border border-gray-200"
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 100, opacity: 0 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        >
+          <div className="p-6">
+            <div className="flex items-start gap-4">
+              <Cookie className="w-8 h-8 text-blue-600 flex-shrink-0 mt-1" />
+              
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Cookie-Einstellungen
+                </h3>
+                
+                <p className="text-gray-600 mb-4">
+                  Wir verwenden Cookies, um Ihre Erfahrung zu verbessern und anonyme Nutzungsstatistiken zu sammeln. 
+                  Ihre Privatsphäre ist uns wichtig - alle Daten werden anonymisiert und IP-Adressen werden gekürzt.
+                </p>
+
+                {!showSettings ? (
+                  // Simple banner
+                  <div className="flex flex-wrap gap-3">
+                    <motion.button
+                      onClick={handleAcceptAll}
+                      className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Check className="w-4 h-4" />
+                      Alle akzeptieren
+                    </motion.button>
+                    
+                    <motion.button
+                      onClick={handleRejectAll}
+                      className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Alle ablehnen
+                    </motion.button>
+                    
+                    <motion.button
+                      onClick={() => setShowSettings(true)}
+                      className="flex items-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Settings className="w-4 h-4" />
+                      Einstellungen
+                    </motion.button>
+                  </div>
+                ) : (
+                  // Detailed settings
+                  <div className="space-y-4">
+                    {/* Functional Cookies */}
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900">Funktionale Cookies</h4>
+                        <p className="text-sm text-gray-600">
+                          Erforderlich für die Grundfunktionen der Website. Diese können nicht deaktiviert werden.
+                        </p>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-12 h-6 bg-green-500 rounded-full flex items-center justify-end px-1">
+                          <div className="w-4 h-4 bg-white rounded-full"></div>
+                        </div>
+                        <span className="ml-2 text-sm text-green-600 font-medium">Erforderlich</span>
+                      </div>
+                    </div>
+
+                    {/* Analytics Cookies */}
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900">Analyse-Cookies</h4>
+                        <p className="text-sm text-gray-600">
+                          Helfen uns zu verstehen, wie die Website genutzt wird. Alle Daten werden anonymisiert.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleToggleConsent('analytics')}
+                        className="flex items-center"
+                      >
+                        <div className={`w-12 h-6 rounded-full flex items-center px-1 transition-colors ${
+                          consent.analytics ? 'bg-blue-500 justify-end' : 'bg-gray-300 justify-start'
+                        }`}>
+                          <div className="w-4 h-4 bg-white rounded-full"></div>
+                        </div>
+                        <span className={`ml-2 text-sm font-medium ${
+                          consent.analytics ? 'text-blue-600' : 'text-gray-500'
+                        }`}>
+                          {consent.analytics ? 'Aktiviert' : 'Deaktiviert'}
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Marketing Cookies */}
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900">Marketing-Cookies</h4>
+                        <p className="text-sm text-gray-600">
+                          Ermöglichen personalisierte Werbung und Remarketing-Funktionen.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleToggleConsent('marketing')}
+                        className="flex items-center"
+                      >
+                        <div className={`w-12 h-6 rounded-full flex items-center px-1 transition-colors ${
+                          consent.marketing ? 'bg-blue-500 justify-end' : 'bg-gray-300 justify-start'
+                        }`}>
+                          <div className="w-4 h-4 bg-white rounded-full"></div>
+                        </div>
+                        <span className={`ml-2 text-sm font-medium ${
+                          consent.marketing ? 'text-blue-600' : 'text-gray-500'
+                        }`}>
+                          {consent.marketing ? 'Aktiviert' : 'Deaktiviert'}
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex flex-wrap gap-3 pt-4">
+                      <motion.button
+                        onClick={handleSaveSettings}
+                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Check className="w-4 h-4" />
+                        Einstellungen speichern
+                      </motion.button>
+                      
+                      <motion.button
+                        onClick={() => setShowSettings(false)}
+                        className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        Zurück
+                      </motion.button>
+                      
+                      <motion.button
+                        onClick={handleDeleteData}
+                        className="flex items-center gap-2 px-6 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <X className="w-4 h-4" />
+                        Alle Daten löschen
+                      </motion.button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Privacy info */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Shield className="w-4 h-4" />
+                    <span>
+                      Ihre Daten werden anonymisiert und IP-Adressen gekürzt. 
+                      Sie können Ihre Einstellungen jederzeit ändern.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+export default CookieConsent; 

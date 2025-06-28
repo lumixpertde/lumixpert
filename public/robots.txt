@@ -1,0 +1,49 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://lumixpert.de/sitemap.xml
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1
+
+# Disallow admin and private areas
+Disallow: /admin
+Disallow: /api/
+Disallow: /private/
+
+# Allow important static resources
+Allow: /public/
+Allow: /assets/
+Allow: /images/
+Allow: /*.css$
+Allow: /*.js$
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.webp$
+Allow: /*.svg$
+Allow: /*.ico$
+Allow: /*.woff$
+Allow: /*.woff2$
+Allow: /*.ttf$
+
+# Block common spam/bot patterns
+Disallow: /*?utm_*
+Disallow: /*?fbclid=*
+Disallow: /*?gclid=*
+Disallow: /search?*
+Disallow: /*?ref=*
+
+# Development and config files
+Disallow: /*.json$
+Disallow: /*.xml$ 
+Disallow: /*.yml$
+Disallow: /*.yaml$
+Disallow: /*.env$
+Disallow: /*.log$
+
+# Allow sitemap specifically
+Allow: /sitemap.xml
+Allow: /sitemap*.xml
+Allow: /robots.txt

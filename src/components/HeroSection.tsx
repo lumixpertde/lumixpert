@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRightIcon, ChevronDownIcon } from 'lucide-react';
+import { trackCTAClick } from '../utils/analytics';
+import { trackMetaCTAClick } from '../utils/metaPixel';
 
 const HeroSection = () => {
   const [animationPhase, setAnimationPhase] = useState(0);
 
   // Function to scroll to about section
   const scrollToAbout = () => {
+    // Track CTA click in both analytics systems
+    trackCTAClick('Angebot anfordern', 'hero_section');
+    trackMetaCTAClick('Angebot anfordern', 'hero_section');
+    
     const aboutSection = document.getElementById('about');
     if (aboutSection) {
       aboutSection.scrollIntoView({ 
@@ -216,10 +222,11 @@ const HeroSection = () => {
             <motion.div className="relative z-10 p-2">
               <motion.img
                 src="/logo.png"
-                alt="Logo"
+                alt="LumiXpert Logo - Premium Lasergravur Dienstleistungen"
                 className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 object-contain"
                 loading="eager"
                 decoding="async"
+                fetchPriority="high"
                 style={{
                   filter: 'brightness(1.2) contrast(1.1)',
                 }}

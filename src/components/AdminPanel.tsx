@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PlusIcon, EditIcon, TrashIcon, SaveIcon, XIcon, ImageIcon, EyeIcon, HomeIcon, InfoIcon, MailIcon, LayoutIcon, GalleryHorizontalIcon } from 'lucide-react';
+import { PlusIcon, EditIcon, TrashIcon, SaveIcon, XIcon, ImageIcon, EyeIcon, HomeIcon, InfoIcon, MailIcon, LayoutIcon, GalleryHorizontalIcon, SearchIcon, Globe, BarChart3, Gauge } from 'lucide-react';
+import SEOAnalytics from './SEOAnalytics';
+import SitemapManager from './SitemapManager';
+import AnalyticsDashboard from './AnalyticsDashboard';
+import MetaPixelDashboard from './MetaPixelDashboard';
+import PerformanceDashboard from './PerformanceDashboard';
 
 interface GalleryItem {
   id: number;
@@ -39,6 +44,27 @@ interface ContactContent {
   };
 }
 
+interface SEOContent {
+  title: string;
+  description: string;
+  keywords: string;
+  ogImage: string;
+  canonicalUrl: string;
+  structuredData: {
+    businessName: string;
+    businessType: string;
+    telephone: string;
+    email: string;
+    address: {
+      street: string;
+      city: string;
+      postalCode: string;
+      country: string;
+    };
+    openingHours: string[];
+  };
+}
+
 
 
 interface AdminPanelProps {
@@ -46,7 +72,7 @@ interface AdminPanelProps {
   onClose: () => void;
 }
 
-type ContentSection = 'gallery' | 'about' | 'contact';
+type ContentSection = 'gallery' | 'about' | 'contact' | 'seo' | 'sitemap' | 'analytics' | 'metapixel' | 'performance';
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose }) => {
   const [activeSection, setActiveSection] = useState<ContentSection>('gallery');
@@ -101,6 +127,27 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose }) => {
     }
   });
 
+  const [seoContent, setSeoContent] = useState<SEOContent>({
+    title: 'LumiXpert - Premium Lasergravur für außergewöhnliche Markenerlebnisse',
+    description: 'Präzise Lasergravuren auf Metall, Holz, Leder und Acryl. Wir verewigen die Energie Ihrer Marke mit hochwertigen Gravurlösungen für Unternehmen und Privatkunden.',
+    keywords: 'Lasergravur, Gravur, Metall, Holz, Leder, Acryl, Glas, Markierung, Personalisierung, Deutschland',
+    ogImage: '/logo.png',
+    canonicalUrl: 'https://lumixpert.de',
+    structuredData: {
+      businessName: 'LumiXpert',
+      businessType: 'LocalBusiness',
+      telephone: '+49 178 1638184',
+      email: 'lumixpert.de@gmail.com',
+      address: {
+        street: 'Schwalbenweg 19',
+        city: 'Melsungen',
+        postalCode: '34212',
+        country: 'DE'
+      },
+      openingHours: ['Mo-Fr 09:00-18:00', 'Sa 10:00-16:00']
+    }
+  });
+
 
 
   // Load content from localStorage on component mount
@@ -151,6 +198,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose }) => {
 
     const savedContact = localStorage.getItem('contactContent');
     if (savedContact) setContactContent(JSON.parse(savedContact));
+
+    const savedSEO = localStorage.getItem('seoContent');
+    if (savedSEO) setSeoContent(JSON.parse(savedSEO));
   }, []);
 
   // Save content to localStorage and dispatch events
@@ -170,6 +220,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose }) => {
     localStorage.setItem('contactContent', JSON.stringify(contactContent));
     window.dispatchEvent(new CustomEvent('contactContentUpdated', { detail: contactContent }));
   }, [contactContent]);
+
+  useEffect(() => {
+    localStorage.setItem('seoContent', JSON.stringify(seoContent));
+    window.dispatchEvent(new CustomEvent('seoContentUpdated', { detail: seoContent }));
+  }, [seoContent]);
 
 
 
@@ -381,6 +436,33 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose }) => {
     setContactContent(prev => ({ ...prev, [field]: value }));
   };
 
+  const updateSEOContent = (field: keyof SEOContent, value: any) => {
+    setSeoContent(prev => ({ ...prev, [field]: value }));
+  };
+
+  const updateSEOStructuredData = (field: string, value: any) => {
+    setSeoContent(prev => ({
+      ...prev,
+      structuredData: {
+        ...prev.structuredData,
+        [field]: value
+      }
+    }));
+  };
+
+  const updateSEOAddress = (field: keyof SEOContent['structuredData']['address'], value: string) => {
+    setSeoContent(prev => ({
+      ...prev,
+      structuredData: {
+        ...prev.structuredData,
+        address: {
+          ...prev.structuredData.address,
+          [field]: value
+        }
+      }
+    }));
+  };
+
 
 
   // Navigation sections
@@ -388,6 +470,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose }) => {
     { id: 'gallery' as ContentSection, name: 'Galerie', icon: <GalleryHorizontalIcon className="w-5 h-5" /> },
     { id: 'about' as ContentSection, name: 'Über Uns', icon: <InfoIcon className="w-5 h-5" /> },
     { id: 'contact' as ContentSection, name: 'Kontakt', icon: <MailIcon className="w-5 h-5" /> },
+    { id: 'seo' as ContentSection, name: 'SEO', icon: <SearchIcon className="w-5 h-5" /> },
+    { id: 'sitemap' as ContentSection, name: 'Sitemap', icon: <Globe className="w-5 h-5" /> },
+    { id: 'analytics' as ContentSection, name: 'Analytics', icon: <BarChart3 className="w-5 h-5" /> },
+    { id: 'metapixel' as ContentSection, name: 'Meta Pixel', icon: <EyeIcon className="w-5 h-5" /> },
+    { id: 'performance' as ContentSection, name: 'Performance', icon: <Gauge className="w-5 h-5" /> },
   ];
 
     // Render content based on active section
@@ -551,7 +638,213 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose }) => {
           </div>
         );
 
+      case 'seo':
+        return (
+          <div className="space-y-6">
+            <h3 className="text-2xl font-bold text-white mb-6">SEO Einstellungen</h3>
+            
+            {/* SEO Analytics Dashboard */}
+            <SEOAnalytics />
+            
+            {/* Basic SEO Settings */}
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h4 className="text-xl font-bold text-gray-900 mb-4">Grundlegende SEO Einstellungen</h4>
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">Meta Titel</label>
+                    <input
+                      type="text"
+                      value={seoContent.title}
+                      onChange={(e) => updateSEOContent('title', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600 text-gray-900"
+                      maxLength={60}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">{seoContent.title.length}/60 Zeichen</p>
+                  </div>
 
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">Meta Beschreibung</label>
+                    <textarea
+                      value={seoContent.description}
+                      onChange={(e) => updateSEOContent('description', e.target.value)}
+                      rows={3}
+                      className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600 text-gray-900 resize-none"
+                      maxLength={160}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">{seoContent.description.length}/160 Zeichen</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">Keywords</label>
+                    <input
+                      type="text"
+                      value={seoContent.keywords}
+                      onChange={(e) => updateSEOContent('keywords', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600 text-gray-900"
+                      placeholder="Keyword1, Keyword2, Keyword3"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">Canonical URL</label>
+                    <input
+                      type="url"
+                      value={seoContent.canonicalUrl}
+                      onChange={(e) => updateSEOContent('canonicalUrl', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600 text-gray-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">OG Image URL</label>
+                    <input
+                      type="text"
+                      value={seoContent.ogImage}
+                      onChange={(e) => updateSEOContent('ogImage', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600 text-gray-900"
+                    />
+                  </div>
+                </div>
+
+                {/* Structured Data Settings */}
+                <div className="space-y-4">
+                  <h5 className="text-lg font-semibold text-gray-900">Strukturierte Daten (Schema.org)</h5>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">Firmenname</label>
+                    <input
+                      type="text"
+                      value={seoContent.structuredData.businessName}
+                      onChange={(e) => updateSEOStructuredData('businessName', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600 text-gray-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">Geschäftstyp</label>
+                    <select
+                      value={seoContent.structuredData.businessType}
+                      onChange={(e) => updateSEOStructuredData('businessType', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600 text-gray-900"
+                    >
+                      <option value="LocalBusiness">Lokales Unternehmen</option>
+                      <option value="Organization">Organisation</option>
+                      <option value="Corporation">Unternehmen</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">Telefon</label>
+                    <input
+                      type="tel"
+                      value={seoContent.structuredData.telephone}
+                      onChange={(e) => updateSEOStructuredData('telephone', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600 text-gray-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">E-Mail</label>
+                    <input
+                      type="email"
+                      value={seoContent.structuredData.email}
+                      onChange={(e) => updateSEOStructuredData('email', e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600 text-gray-900"
+                    />
+                  </div>
+
+                  {/* Address */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Adresse</label>
+                    <input
+                      type="text"
+                      value={seoContent.structuredData.address.street}
+                      onChange={(e) => updateSEOAddress('street', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600 text-gray-900"
+                      placeholder="Straße und Hausnummer"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        value={seoContent.structuredData.address.postalCode}
+                        onChange={(e) => updateSEOAddress('postalCode', e.target.value)}
+                        className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600 text-gray-900"
+                        placeholder="PLZ"
+                      />
+                      <input
+                        type="text"
+                        value={seoContent.structuredData.address.city}
+                        onChange={(e) => updateSEOAddress('city', e.target.value)}
+                        className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600 text-gray-900"
+                        placeholder="Stadt"
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      value={seoContent.structuredData.address.country}
+                      onChange={(e) => updateSEOAddress('country', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600 text-gray-900"
+                      placeholder="Land (z.B. DE)"
+                    />
+                  </div>
+
+                  {/* Opening Hours */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">Öffnungszeiten</label>
+                    {seoContent.structuredData.openingHours.map((hours, index) => (
+                      <input
+                        key={index}
+                        type="text"
+                        value={hours}
+                        onChange={(e) => {
+                          const newHours = [...seoContent.structuredData.openingHours];
+                          newHours[index] = e.target.value;
+                          updateSEOStructuredData('openingHours', newHours);
+                        }}
+                        className="w-full p-2 mb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600 text-gray-900"
+                        placeholder="Mo-Fr 09:00-18:00"
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'sitemap':
+        return (
+          <div className="space-y-6">
+            <h3 className="text-2xl font-bold text-white mb-6">Sitemap Verwaltung</h3>
+            <SitemapManager galleryItems={galleryItems} />
+          </div>
+        );
+
+      case 'analytics':
+        return (
+          <div className="space-y-6">
+            <h3 className="text-2xl font-bold text-white mb-6">Google Analytics Dashboard</h3>
+            <AnalyticsDashboard />
+          </div>
+        );
+
+      case 'metapixel':
+        return (
+          <div className="space-y-6">
+            <h3 className="text-2xl font-bold text-white mb-6">Meta (Facebook) Pixel Dashboard</h3>
+            <MetaPixelDashboard />
+          </div>
+        );
+
+      case 'performance':
+        return (
+          <div className="space-y-6">
+            <h3 className="text-2xl font-bold text-white mb-6">Performance Dashboard</h3>
+            <PerformanceDashboard />
+          </div>
+        );
 
       case 'gallery':
       default:
@@ -649,7 +942,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose }) => {
                           {formData.image && (
                             <img
                               src={formData.image}
-                              alt={formData.name || 'Vorschau'}
+                              alt={`${formData.name || 'Material'} Vorschau - Lasergravur Beispielbild`}
                               className="w-full h-40 object-cover rounded-md mb-3"
                               onError={(e) => {
                                 e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjMzc0MTUxIi8+CjxwYXRoIGQ9Ik0xMDAgNTBMMTUwIDEwMEgxMDBWMTUwSDEwMFYxMDBINTBMMTAwIDUwWiIgZmlsbD0iIzZCNzI4MCIvPgo8L3N2Zz4K';
@@ -763,7 +1056,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose }) => {
                         {productFormData.image && (
                                 <img
                             src={productFormData.image}
-                            alt={productFormData.title || 'Produkt Vorschau'}
+                            alt={`${productFormData.title || 'Produkt'} Vorschau - Lasergravur Beispiel`}
                                   className="w-full h-40 object-cover rounded-md mb-3"
                                   onError={(e) => {
                                     e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjMzc0MTUxIi8+CjxwYXRoIGQ9Ik0xMDAgNTBMMTUwIDEwMEgxMDBWMTUwSDEwMFYxMDBINTBMMTAwIDUwWiIgZmlsbD0iIzZCNzI4MCIvPgo8L3N2Zz4K';
@@ -816,7 +1109,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose }) => {
                       <div className="flex items-center space-x-4">
                           <img
                             src={item.image}
-                            alt={item.name}
+                            alt={`${item.name} Material - Lasergravur Übersichtsbild`}
                           className="w-16 h-16 object-cover rounded-lg"
                         />
                         <div>
@@ -869,7 +1162,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose }) => {
                             <div className="aspect-video overflow-hidden">
                               <img
                                 src={product.image}
-                                alt={product.title}
+                                alt={`${product.title} - ${item.name} Lasergravur Produktbild`}
                             className="w-full h-full object-cover"
                           />
                         </div>

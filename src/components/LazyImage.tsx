@@ -35,7 +35,8 @@ const LazyImage: React.FC<LazyImageProps> = ({
         }
       },
       {
-        rootMargin: '50px' // Start loading 50px before the image comes into view
+        rootMargin: '100px', // Start loading 100px before the image comes into view
+        threshold: 0.1 // Trigger when 10% of the image is visible
       }
     );
 
@@ -67,7 +68,7 @@ const LazyImage: React.FC<LazyImageProps> = ({
         transition={{ duration: 0.3 }}
       >
         {placeholder ? (
-          <img src={placeholder} alt="" className="w-full h-full object-cover opacity-50 blur-sm" />
+          <img src={placeholder} alt="Bild wird geladen..." className="w-full h-full object-cover opacity-50 blur-sm" />
         ) : (
           <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
         )}
@@ -86,6 +87,8 @@ const LazyImage: React.FC<LazyImageProps> = ({
           onError={handleError}
           loading="lazy"
           decoding="async"
+          fetchPriority="low"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           initial={{ opacity: 0, scale: 1.1 }}
           animate={{ 
             opacity: isLoaded ? 1 : 0,

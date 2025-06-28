@@ -1,6 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { MailIcon, PhoneIcon, MapPinIcon, SendIcon } from 'lucide-react';
+import { trackEvent } from '../utils/analytics';
+import { trackMetaContact, trackMetaLead } from '../utils/metaPixel';
 
 interface ContactContent {
   title: string;
@@ -59,6 +61,27 @@ const ContactSection = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Track form submission in both analytics systems
+    trackEvent({
+      action: 'form_submit_success',
+      category: 'form',
+      label: 'contact_form',
+      customParameters: {
+        form_name: 'contact_form',
+        page_section: 'contact'
+      }
+    });
+    
+    // Track Meta Pixel events
+    trackMetaContact('contact_form');
+    trackMetaLead({
+      content_name: 'Contact Form Submission',
+      content_category: 'Lead Generation',
+      currency: 'EUR',
+      value: 1
+    });
+    
     // Handle form submission logic here
     console.log('Contact form submitted');
     // Reset form (would typically be done with form state)

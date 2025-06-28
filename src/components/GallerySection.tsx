@@ -2,6 +2,8 @@ import React, { useRef, useMemo, useState, useEffect } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { XIcon, PlusIcon, ArrowLeftIcon, ArrowRightIcon } from 'lucide-react';
 import LazyImage from './LazyImage';
+import { trackEvent } from '../utils/analytics';
+import { metaPixel } from '../utils/metaPixel';
 
 interface GalleryItem {
   id: number;
@@ -99,6 +101,21 @@ const GallerySection = () => {
   }, []);
 
   const handleMaterialClick = (material: GalleryItem) => {
+    // Track gallery interaction in both analytics systems
+    trackEvent({
+      action: 'gallery_material_click',
+      category: 'gallery',
+      label: material.name,
+      customParameters: {
+        material_name: material.name,
+        material_id: material.id,
+        product_count: material.products?.length || 0
+      }
+    });
+    
+    // Track Meta Pixel gallery view
+    metaPixel.trackGalleryView(material.name, material.products?.length || 0);
+    
     setSelectedMaterial(material);
     setSelectedImageIndex(0);
   };
@@ -261,7 +278,7 @@ const GallerySection = () => {
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <LazyImage
                     src={material.image}
-                    alt={material.name}
+                    alt={`${material.name} Lasergravur - ${material.description}`}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                   
@@ -380,7 +397,7 @@ const GallerySection = () => {
                       <div className="aspect-video bg-gray-800 rounded-lg overflow-hidden">
                         <img
                           src={selectedMaterial.products[selectedImageIndex].image}
-                          alt={selectedMaterial.products[selectedImageIndex].title}
+                          alt={`${selectedMaterial.products[selectedImageIndex].title} - ${selectedMaterial.name} Lasergravur Beispiel`}
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -434,7 +451,7 @@ const GallerySection = () => {
                           >
                             <img
                               src={product.image}
-                              alt={product.title}
+                              alt={`${product.title} - ${selectedMaterial.name} Lasergravur Miniaturansicht`}
                               className="w-full h-full object-cover"
                             />
                           </button>
