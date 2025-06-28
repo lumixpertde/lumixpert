@@ -5,11 +5,11 @@ import { ArrowRightIcon, ChevronDownIcon } from 'lucide-react';
 const HeroSection = () => {
   const [animationPhase, setAnimationPhase] = useState(0);
 
-  // Function to scroll to contact section
-  const scrollToContact = () => {
-    const contactSection = document.getElementById('contact');
-    if (contactSection) {
-      contactSection.scrollIntoView({ 
+  // Function to scroll to about section
+  const scrollToAbout = () => {
+    const aboutSection = document.getElementById('about');
+    if (aboutSection) {
+      aboutSection.scrollIntoView({ 
         behavior: 'smooth',
         block: 'start'
       });
@@ -433,17 +433,17 @@ const HeroSection = () => {
             transition={{ delay: 0.5, duration: 0.6 }}
           >
             {/* Primary CTA */}
-            <motion.button 
-              className="group relative px-6 sm:px-8 py-4 sm:py-4 bg-gradient-to-r from-red-600 to-red-700 text-white text-base sm:text-lg font-semibold rounded-lg overflow-hidden shadow-lg w-full sm:w-auto touch-target"
-              whileHover={{ 
-                scale: 1.05,
-                boxShadow: '0 0 30px rgba(239, 68, 68, 0.5)',
-              }}
-              whileTap={{ scale: 0.95 }}
-              style={{
-                boxShadow: '0 0 20px rgba(239, 68, 68, 0.3)',
-              }}
-              onClick={scrollToContact}
+                         <motion.button 
+               className="group relative px-6 sm:px-8 py-4 sm:py-4 bg-gradient-to-r from-red-600 to-red-700 text-white text-base sm:text-lg font-semibold rounded-lg overflow-hidden shadow-lg w-full sm:w-auto touch-target"
+               whileHover={{ 
+                 scale: 1.05,
+                 boxShadow: '0 0 30px rgba(239, 68, 68, 0.5)',
+               }}
+               whileTap={{ scale: 0.95 }}
+               style={{
+                 boxShadow: '0 0 20px rgba(239, 68, 68, 0.3)',
+               }}
+               onClick={scrollToAbout}
             >
               <span className="relative flex items-center justify-center gap-3 z-10">
                 Angebot anfordern
@@ -468,13 +468,13 @@ const HeroSection = () => {
           transition={{ delay: 1, duration: 0.6 }}
         >
           <span className="text-xs mb-2 tracking-wider uppercase font-medium whitespace-nowrap">Scrollen zum Erkunden</span>
-          <motion.div
-            className="flex items-center justify-center cursor-pointer"
-            animate={{ y: [0, 6, 0] }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            onClick={scrollToContact}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+                     <motion.div
+             className="flex items-center justify-center cursor-pointer"
+             animate={{ y: [0, 6, 0] }}
+             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+             onClick={scrollToAbout}
+             whileHover={{ scale: 1.1 }}
+             whileTap={{ scale: 0.9 }}
           >
             <ChevronDownIcon size={20} />
           </motion.div>

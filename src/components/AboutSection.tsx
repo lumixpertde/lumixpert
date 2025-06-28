@@ -141,7 +141,7 @@ const AboutSection = () => {
   };
 
   return (
-    <section ref={ref} className="w-full py-12 sm:py-16 md:py-20 bg-black relative overflow-hidden">
+    <section id="about" ref={ref} className="w-full py-12 sm:py-16 md:py-20 bg-black relative overflow-hidden">
       {/* Animated background elements */}
       <motion.div 
         className="absolute top-0 left-0 w-full h-full"
