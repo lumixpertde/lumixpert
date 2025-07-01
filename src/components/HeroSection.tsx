@@ -13,7 +13,7 @@ const HeroSection = () => {
     trackCTAClick('Angebot anfordern', 'hero_section');
     trackMetaCTAClick('Angebot anfordern', 'hero_section');
     
-    const aboutSection = document.getElementById('about');
+    const aboutSection = document.getElementById('contact');
     if (aboutSection) {
       aboutSection.scrollIntoView({ 
         behavior: 'smooth',
