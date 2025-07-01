@@ -135,10 +135,7 @@ export default defineConfig({
     },
     
     // Optimize HMR
-    hmr: {
-      overlay: false, // Disable error overlay for better performance
-      port: 5175
-    }
+    hmr: false
   },
   
   // Preview server optimizations
